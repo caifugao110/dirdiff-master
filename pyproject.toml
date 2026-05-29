@@ -1,0 +1,21 @@
+[project]
+name = "dirdiff-master"
+version = "1.0.1"
+description = "A polished Python GUI tool for comparing folders and managing different files."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Tobin" }]
+license = { file = "LICENSE" }
+dependencies = [
+    "ttkbootstrap>=1.10.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/caifugao110/dirdiff-master"
+Repository = "https://github.com/caifugao110/dirdiff-master"
+
+[project.scripts]
+dirdiff-master = "app:main"
+
+[tool.setuptools]
+py-modules = ["app"]
