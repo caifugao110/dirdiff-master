@@ -1,6 +1,6 @@
 [project]
 name = "dirdiff-master"
-version = "1.0.1"
+version = "1.0.2"
 description = "A polished Python GUI tool for comparing folders and managing different files."
 readme = "README.md"
 requires-python = ">=3.9"

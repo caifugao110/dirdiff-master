@@ -138,6 +138,7 @@ def compare_folders(
     selected_extensions: Iterable[str] | None = None,
     hash_changed_files: bool = True,
     mtime_tolerance: float = 1.0,
+    recursive: bool = False,
 ) -> list[DiffRow]:
     base_path = Path(base_root)
     compare_path = Path(compare_root)
@@ -152,8 +153,8 @@ def compare_folders(
         if not extension_filter:
             raise ValueError("请选择至少一种文件格式。")
 
-    base_records = collect_records(base_path, mode, extension_filter)
-    compare_records = collect_records(compare_path, mode, extension_filter)
+    base_records = collect_records(base_path, mode, extension_filter, recursive)
+    compare_records = collect_records(compare_path, mode, extension_filter, recursive)
 
     rows: list[DiffRow] = []
     for key in sorted(set(base_records) | set(compare_records), key=str.casefold):
@@ -186,9 +187,9 @@ def compare_folders(
     return rows
 
 
-def collect_records(root: Path, mode: CompareMode, extension_filter: set[str] | None = None) -> dict[str, list[FileRecord]]:
+def collect_records(root: Path, mode: CompareMode, extension_filter: set[str] | None = None, recursive: bool = False) -> dict[str, list[FileRecord]]:
     records: dict[str, list[FileRecord]] = {}
-    for file_path in iter_files(root):
+    for file_path in iter_files(root, recursive):
         extension = file_path.suffix.lower()
         if extension_filter is not None and extension not in extension_filter:
             continue
@@ -207,11 +208,16 @@ def collect_records(root: Path, mode: CompareMode, extension_filter: set[str] | 
     return records
 
 
-def iter_files(root: Path):
-    with os.scandir(root) as entries:
-        for entry in entries:
-            if entry.is_file():
-                yield Path(entry.path)
+def iter_files(root: Path, recursive: bool = False):
+    if recursive:
+        for dirpath, _, filenames in os.walk(root):
+            for filename in filenames:
+                yield Path(dirpath) / filename
+    else:
+        with os.scandir(root) as entries:
+            for entry in entries:
+                if entry.is_file():
+                    yield Path(entry.path)
 
 
 def make_key(relative_path: str, mode: CompareMode) -> str:
@@ -463,6 +469,7 @@ class DirDiffApp(ttk.Window):
         self.summary_var = tk.StringVar(value="选择两个文件夹后开始对比")
         self.progress_var = tk.StringVar(value="")
         self.precise_compare_var = tk.BooleanVar(value=False)
+        self.include_subfolders_var = tk.BooleanVar(value=False)
         self.latest_html_report: Path | None = None
         self.extension_vars: dict[str, tk.BooleanVar] = {}
         self.rows: list[DiffRow] = []
@@ -554,13 +561,12 @@ class DirDiffApp(ttk.Window):
             variable=self.precise_compare_var,
             bootstyle="round-toggle",
         ).pack(anchor="w", pady=(8, 2))
-        ttk.Label(
+        ttk.Checkbutton(
             option_box,
-            text="更准确，但大文件或局域网路径会更慢。",
-            bootstyle="secondary",
-            wraplength=285,
-            justify=LEFT,
-        ).pack(anchor="w", fill=X, pady=(0, 4))
+            text="包含子文件夹",
+            variable=self.include_subfolders_var,
+            bootstyle="round-toggle",
+        ).pack(anchor="w", pady=(4, 0))
 
         ext_header = ttk.Frame(option_box)
         ext_header.pack(fill=X, pady=(10, 4))
@@ -701,7 +707,7 @@ class DirDiffApp(ttk.Window):
         self.summary_var.set("比较进行中")
         thread = threading.Thread(
             target=self._compare_worker,
-            args=(base, compare, self.mode_var.get(), selected_extensions, self.precise_compare_var.get()),
+            args=(base, compare, self.mode_var.get(), selected_extensions, self.precise_compare_var.get(), self.include_subfolders_var.get()),
             daemon=True,
         )
         thread.start()
@@ -714,6 +720,7 @@ class DirDiffApp(ttk.Window):
         mode: str,
         selected_extensions: list[str],
         precise_compare: bool,
+        recursive: bool,
     ) -> None:
         try:
             rows = compare_folders(
@@ -722,6 +729,7 @@ class DirDiffApp(ttk.Window):
                 mode=mode,
                 selected_extensions=selected_extensions,
                 hash_changed_files=precise_compare,
+                recursive=recursive,
             )
             reports = write_reports(rows, REPORT_DIR)
             self.worker_queue.put(("done", (rows, reports)))
