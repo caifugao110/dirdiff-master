@@ -584,21 +584,7 @@ class DirDiffApp(ttk.Window):
         self.ext_canvas.pack(side=LEFT, fill=BOTH, expand=YES)
         self.ext_scroll.pack(side=RIGHT, fill=tk.Y)
 
-        action_box = ttk.Labelframe(parent, text="执行", padding=12)
-        action_box.grid(row=2, column=0, sticky="ew", pady=(12, 0))
-        action_box.columnconfigure(0, weight=1)
-        ttk.Button(action_box, text="开始对比", bootstyle="success", command=self.start_compare).grid(row=0, column=0, sticky="ew")
-        ttk.Button(action_box, text="一键清空", bootstyle="secondary-outline", command=self.clear_all).grid(row=1, column=0, sticky="ew", pady=(8, 0))
-        self.progress = ttk.Progressbar(action_box, mode="indeterminate")
-        self.progress.grid(row=2, column=0, sticky="ew", pady=(10, 0))
-
-        report_box = ttk.Labelframe(parent, text="报告与差异操作", padding=12)
-        report_box.grid(row=3, column=0, sticky="ew", pady=(12, 0))
-        report_box.columnconfigure(0, weight=1)
-        ttk.Label(report_box, textvariable=self.report_var, wraplength=310, bootstyle="secondary").grid(row=0, column=0, columnspan=2, sticky="ew")
-        ttk.Button(report_box, text="打开生成报告", bootstyle="secondary-outline", command=self.open_latest_report).grid(row=1, column=0, sticky="ew", pady=(10, 0))
-        ttk.Label(report_box, text="差异文件操作也可在右侧结果区顶部执行。", bootstyle="secondary").grid(row=2, column=0, sticky="w", pady=(8, 0))
-
+        
         self._sync_extension_state()
 
     def _path_row(self, parent: ttk.Frame, row: int, title: str, hint: str, var: tk.StringVar, style: str) -> None:
